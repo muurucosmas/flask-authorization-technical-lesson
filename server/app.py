@@ -4,7 +4,7 @@ from flask import Flask, make_response, request, session
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
 
-from models import db, User, UserSchema
+from models import db, User, UserSchema,DocumentSchema,Document
 
 app = Flask(__name__)
 app.secret_key = b'Y\xf1Xz\x00\xad|eQ\x80t \xca\x1a\x10K'
@@ -18,6 +18,10 @@ db.init_app(app)
 
 api = Api(app)
 
+@app.before_request
+def check_if_logged_in():
+    if not session.get('user_id') and request.endpoint == 'document':
+        return {'error':'unauthorized'},401
 class Login(Resource):
 
     def post(self):
@@ -48,10 +52,15 @@ class Logout(Resource):
 
 class Document(Resource):
     def get(self, id):
+
+        
+
+        
         document = Document.query.filter(Document.id == id).first()
         return DocumentSchema().dump(document)
 
     def patch(self, id):
+        
         document = Document.query.filter(Document.id == id).first()
         for attr in request.form:
             setattr(record, attr, request.form[attr])
@@ -67,6 +76,7 @@ class Document(Resource):
         return response
 
     def delete(self, id):
+        
         document = Document.query.filter(Document.id == id).first()
         
         db.session.delete(document)
@@ -83,7 +93,7 @@ class Document(Resource):
 api.add_resource(Login, '/login')
 api.add_resource(CheckSession, '/check_session')
 api.add_resource(Logout, '/logout')
-api.add_resource(Document, '/documents/<int:id>')
+api.add_resource(Document, '/documents/<int:id>',endpoint ='document')
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
